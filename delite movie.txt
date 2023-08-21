@@ -1,0 +1,82 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+struct food {
+  int id;
+  char name[20];
+  int price;
+  int size;
+};
+
+struct bill {
+  int id;
+  char cafe_name[20];
+  char date[20];
+  struct food *food;
+  int num_items;
+};
+
+void add_food(struct food *f) {
+  printf("Enter food id: ");
+  scanf("%d", &f->id);
+  printf("Enter food name: ");
+  scanf("%s", f->name);
+  printf("Enter food price: ");
+  scanf("%d", &f->price);
+  printf("Enter food size: ");
+  scanf("%d", &f->size);
+}
+
+void modify_food(struct food *f) {
+  printf("Enter new food name: ");
+  scanf("%s", f->name);
+  printf("Enter new food price: ");
+  scanf("%d", &f->price);
+  printf("Enter new food size: ");
+  scanf("%d", &f->size);
+}
+
+void delete_food(struct food *f) {
+  free(f);
+}
+
+void view_bill(struct bill *b) {
+  printf("Cafe name: %s\n", b->cafe_name);
+  printf("Date: %s\n", b->date);
+  if (b->food != NULL) {
+    for (int i = 0; i < b->num_items; i++) {
+      printf("Item: %s, Quantity: %d, Amount: %d\n", b->food[i].name, b->food[i].size, b->food[i].price * b->food[i].size);
+    }
+  } else {
+    printf("No food items in bill.\n");
+  }
+}
+
+int main() {
+  struct bill b;  // Create a bill instance
+  printf("Enter cafe name: ");
+  scanf("%s", b.cafe_name);
+  printf("Enter date: ");
+  scanf("%s", b.date);
+
+  // Assuming you want to add multiple food items to the bill
+  int num_items;
+  printf("Enter number of food items: ");
+  scanf("%d", &num_items);
+
+  b.food = malloc(num_items * sizeof(struct food));
+  b.num_items = num_items;
+
+  for (int i = 0; i < num_items; i++) {
+    add_food(&b.food[i]);
+  }
+
+  view_bill(&b);
+
+  // Don't forget to free the dynamically allocated memory
+  free(b.food);
+
+  return 0;
+}
+
