@@ -1,82 +1,187 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-struct food {
-  int id;
-  char name[20];
-  int price;
-  int size;
+#define MAX_FOOD_ITEMS 20
+#define MAX_RESERVATIONS 50
+#define MAX_FEEDBACK 100
+// Structure to represent a food item
+struct FoodItem {
+char name[50];
+int price;
 };
-
-struct bill {
-  int id;
-  char cafe_name[20];
-  char date[20];
-  struct food *food;
-  int num_items;
+// Structure for table reservations
+struct Reservation {
+char name[50];
+char date[20];
+char time[10];
+int tableNumber;
 };
-
-void add_food(struct food *f) {
-  printf("Enter food id: ");
-  scanf("%d", &f->id);
-  printf("Enter food name: ");
-  scanf("%s", f->name);
-  printf("Enter food price: ");
-  scanf("%d", &f->price);
-  printf("Enter food size: ");
-  scanf("%d", &f->size);
+// Structure for customer feedback
+struct CustomerFeedback {
+char name[50];
+char feedback[200];
+int rating;
+};
+// Function to display menu
+void displayMenu(struct FoodItem menu[], int itemCount) {
+printf("Menu:\n");
+for (int i = 0; i < itemCount; i++) {
+printf("%d. %s - Rs. %d\n", i + 1, menu[i].name, menu[i].price);
 }
-
-void modify_food(struct food *f) {
-  printf("Enter new food name: ");
-  scanf("%s", f->name);
-  printf("Enter new food price: ");
-  scanf("%d", &f->price);
-  printf("Enter new food size: ");
-  scanf("%d", &f->size);
 }
-
-void delete_food(struct food *f) {
-  free(f);
+// Function to place an order
+int placeOrder(struct FoodItem menu[], int itemCount) {
+int orderCount = 0;
+int totalAmount = 0;
+printf("Enter the number of items to order: ");
+scanf("%d", &orderCount);
+if (orderCount <= 0) {
+return totalAmount;
 }
-
-void view_bill(struct bill *b) {
-  printf("Cafe name: %s\n", b->cafe_name);
-  printf("Date: %s\n", b->date);
-  if (b->food != NULL) {
-    for (int i = 0; i < b->num_items; i++) {
-      printf("Item: %s, Quantity: %d, Amount: %d\n", b->food[i].name, b->food[i].size, b->food[i].price * b->food[i].size);
-    }
-  } else {
-    printf("No food items in bill.\n");
-  }
+printf("Enter the item numbers to order (space-separated): ");
+int itemNumber;
+for (int i = 0; i < orderCount; i++) {
+scanf("%d", &itemNumber);
+if (itemNumber >= 1 && itemNumber <= itemCount) {
+totalAmount += menu[itemNumber - 1].price;
 }
-
+}
+return totalAmount;
+}
+// Function to reserve a table
+void reserveTable(struct Reservation reservations[], int *reservationCount) {
+if (*reservationCount >= MAX_RESERVATIONS) {
+printf("Sorry, all tables are reserved for the specified date and time.\n");
+return;
+}
+struct Reservation newReservation;
+printf("Enter your name: ");
+scanf("%s", newReservation.name);
+printf("Enter the date (DD/MM/YYYY): ");
+scanf("%s", newReservation.date);
+printf("Enter the time (HH:MM AM/PM): ");
+scanf("%s", newReservation.time);
+// Find an available table (you can modify this logic as needed)
+newReservation.tableNumber = *reservationCount + 1;
+reservations[*reservationCount] = newReservation;
+(*reservationCount)++;
+printf("Table reserved successfully! Your table number is %d.\n",
+newReservation.tableNumber);
+}
+// Function to provide feedback
+void provideFeedback(struct CustomerFeedback feedbackArray[], int *feedbackCount) {
+struct CustomerFeedback newFeedback;
+printf("Enter your name: ");
+scanf("%s", newFeedback.name);
+printf("Provide your feedback (up to 200 characters):\n");
+scanf(" %[^\n]s", newFeedback.feedback);
+printf("Rate your experience (1 to 5): ");
+scanf("%d", &newFeedback.rating);
+feedbackArray[*feedbackCount] = newFeedback;
+(*feedbackCount)++;
+printf("Thank you for your feedback and rating!\n");
+}
 int main() {
-  struct bill b;  // Create a bill instance
-  printf("Enter cafe name: ");
-  scanf("%s", b.cafe_name);
-  printf("Enter date: ");
-  scanf("%s", b.date);
-
-  // Assuming you want to add multiple food items to the bill
-  int num_items;
-  printf("Enter number of food items: ");
-  scanf("%d", &num_items);
-
-  b.food = malloc(num_items * sizeof(struct food));
-  b.num_items = num_items;
-
-  for (int i = 0; i < num_items; i++) {
-    add_food(&b.food[i]);
-  }
-
-  view_bill(&b);
-
-  // Don't forget to free the dynamically allocated memory
-  free(b.food);
-
-  return 0;
+struct FoodItem veg_menu[] = {
+{"Chole Bhature", 100},
+{"Dal Makhani", 250},
+{"Kadhi Chawal", 150},
+{"Paratha (Aloo)", 100},
+{"Paratha (Paneer)", 150},
+{"Paratha (Mix)", 180},
+{"Paratha (Gobi)", 120},
+{"Paratha (Onion)", 100},
+{"Kadhai Paneer", 200},
+{"Idli (Pair)", 30},
+{"Curd Rice", 100},
+{"Dosa (Plain)", 60},
+{"Dosa (Masala)", 100},
+{"Dosa (Neer)", 80},
+{"Vada (Pair)", 50},
+{"South Indian Pulao", 90},
+{"Kashmiri Pulao", 140},
+{"Methi Pulao", 120},
+{"Plain Rice", 60},
+{"Ghee Rice", 100},
+{"Kabuli Pulao", 150},
+{"Simple Naan", 40},
+{"Butter Naan", 50},
+// Add more veg items here
+};
+struct FoodItem non_veg_menu[] = {
+{"Mutton Curry", 500},
+{"Butter Chicken", 350},
+{"Spicy Chicken Masala", 250},
+{"Amritsari Chicken Masala", 300},
+{"Chicken Korma", 300},
+{"Chicken Kolhapuri", 300},
+{"Kori Gassi", 250},
+{"Chicken Sukka", 250},
+{"Hyderabad Biryani", 200},
+{"Kolkata Chicken Biryani", 200},
+{"Lucknowi Biryani", 220},
+{"Malabar Biryani", 220},
+{"Donne Biryani", 180},
+// Add more non-veg items here
+};
+struct Reservation reservations[MAX_RESERVATIONS];
+int reservationCount = 0;
+struct CustomerFeedback feedbackArray[MAX_FEEDBACK];
+int feedbackCount = 0;
+int veg_total = 0;
+int non_veg_total = 0;
+printf("Welcome to our restaurant!\n");
+printf("Please select the type of food:\n");
+printf("1. Veg\n");
+printf("2. Non Veg\n");
+int choice;
+scanf("%d", &choice);
+if (choice == 1) {
+displayMenu(veg_menu, sizeof(veg_menu) / sizeof(struct FoodItem));
+veg_total = placeOrder(veg_menu, sizeof(veg_menu) / sizeof(struct FoodItem));
+} else if (choice == 2) {
+displayMenu(non_veg_menu, sizeof(non_veg_menu) / sizeof(struct FoodItem));
+non_veg_total = placeOrder(non_veg_menu, sizeof(non_veg_menu) / sizeof(struct
+FoodItem));
+} else {
+printf("Invalid choice!\n");
+return 1; // Exit with an error code
 }
-
+// Display the order and total amount
+printf("\n----------------------------------\n");
+printf(" ORDER SUMMARY\n");
+printf("----------------------------------\n");
+if (veg_total > 0) {
+printf("Veg Items Total: Rs. %d\n", veg_total);
+}
+if (non_veg_total > 0) {
+printf("Non Veg Items Total: Rs. %d\n", non_veg_total);
+}
+int totalAmount = veg_total + non_veg_total;
+printf("Total Amount: Rs. %d\n", totalAmount);
+// Table reservation and feedback options
+int option;
+while (1) {
+printf("\nOptions:\n");
+printf("1. Reserve a Table\n");
+printf("2. Provide Feedback\n");
+printf("3. Exit\n");
+printf("Enter your choice:\n"); // Fixed the missing quotation mark
+scanf("%d", &option);
+switch (option) {
+case 1:
+reserveTable(reservations, &reservationCount);
+break;
+case 2:
+provideFeedback(feedbackArray, &feedbackCount);
+break;
+case 3:
+// Exit the program
+printf("Thank you for using our restaurant management system!\n");
+return 0;
+default:
+printf("Invalid option. Please try again.\n");
+}
+}
+return 0; // Exit with a success code
+}
