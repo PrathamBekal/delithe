@@ -1,187 +1,383 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#define MAX_FOOD_ITEMS 20
-#define MAX_RESERVATIONS 50
-#define MAX_FEEDBACK 100
-// Structure to represent a food item
-struct FoodItem {
-char name[50];
-int price;
-};
-// Structure for table reservations
-struct Reservation {
-char name[50];
-char date[20];
-char time[10];
-int tableNumber;
-};
-// Structure for customer feedback
-struct CustomerFeedback {
-char name[50];
-char feedback[200];
-int rating;
-};
-// Function to display menu
-void displayMenu(struct FoodItem menu[], int itemCount) {
-printf("Menu:\n");
-for (int i = 0; i < itemCount; i++) {
-printf("%d. %s - Rs. %d\n", i + 1, menu[i].name, menu[i].price);
+
+// Function prototypes
+void adminLogin();
+void userLogin();
+void addFood();
+void modifyFood();
+void deleteFood();
+void viewAllFood();
+void placeOrder();
+void saveFoodToFile();
+void generateBill(int billId, char* username, char selectedFood[][50], int quantity[], int numItems, double foodPrices[], double* totalCost);
+int totalItemsOrdered(int quantity[], int numItems);
+void flushInput();
+
+// Global variables
+int isAdminLoggedIn = 0;
+int foodCount = 0;
+char foodItems[100][50]; // Store food item names
+double foodPrices[100];  // Store food item prices
+int quantity[10]; // Store quantities of items in the order
+int numItems = 0; // Total number of items in the order
+
+void flushInput() { 
+    int c;
+    while ((c = getchar()) != '\n' && c != EOF);
 }
+
+
+// Function to load food details from a file
+void loadFoodFromFile() {
+    FILE* foodFile = fopen("food.txt", "r");
+    if (foodFile != NULL) {
+        while (fscanf(foodFile, "%s %lf\n", foodItems[foodCount], &foodPrices[foodCount]) != EOF) {
+            foodCount++;
+        }
+        fclose(foodFile);
+    }
 }
-// Function to place an order
-int placeOrder(struct FoodItem menu[], int itemCount) {
-int orderCount = 0;
-int totalAmount = 0;
-printf("Enter the number of items to order: ");
-scanf("%d", &orderCount);
-if (orderCount <= 0) {
-return totalAmount;
+void saveFoodToFile() {
+    FILE* foodFile = fopen("food.txt", "w");
+    if (foodFile != NULL) {
+        for (int i = 0; i < foodCount; i++) {
+            fprintf(foodFile, "%s %.2lf\n", foodItems[i], foodPrices[i]);
+        }
+        fclose(foodFile);
+        printf("Food details saved to file successfully.\n");
+    } else {
+        printf("Error saving food details to file.\n");
+    }
 }
-printf("Enter the item numbers to order (space-separated): ");
-int itemNumber;
-for (int i = 0; i < orderCount; i++) {
-scanf("%d", &itemNumber);
-if (itemNumber >= 1 && itemNumber <= itemCount) {
-totalAmount += menu[itemNumber - 1].price;
-}
-}
-return totalAmount;
-}
-// Function to reserve a table
-void reserveTable(struct Reservation reservations[], int *reservationCount) {
-if (*reservationCount >= MAX_RESERVATIONS) {
-printf("Sorry, all tables are reserved for the specified date and time.\n");
-return;
-}
-struct Reservation newReservation;
-printf("Enter your name: ");
-scanf("%s", newReservation.name);
-printf("Enter the date (DD/MM/YYYY): ");
-scanf("%s", newReservation.date);
-printf("Enter the time (HH:MM AM/PM): ");
-scanf("%s", newReservation.time);
-// Find an available table (you can modify this logic as needed)
-newReservation.tableNumber = *reservationCount + 1;
-reservations[*reservationCount] = newReservation;
-(*reservationCount)++;
-printf("Table reserved successfully! Your table number is %d.\n",
-newReservation.tableNumber);
-}
-// Function to provide feedback
-void provideFeedback(struct CustomerFeedback feedbackArray[], int *feedbackCount) {
-struct CustomerFeedback newFeedback;
-printf("Enter your name: ");
-scanf("%s", newFeedback.name);
-printf("Provide your feedback (up to 200 characters):\n");
-scanf(" %[^\n]s", newFeedback.feedback);
-printf("Rate your experience (1 to 5): ");
-scanf("%d", &newFeedback.rating);
-feedbackArray[*feedbackCount] = newFeedback;
-(*feedbackCount)++;
-printf("Thank you for your feedback and rating!\n");
-}
+
 int main() {
-struct FoodItem veg_menu[] = {
-{"Chole Bhature", 100},
-{"Dal Makhani", 250},
-{"Kadhi Chawal", 150},
-{"Paratha (Aloo)", 100},
-{"Paratha (Paneer)", 150},
-{"Paratha (Mix)", 180},
-{"Paratha (Gobi)", 120},
-{"Paratha (Onion)", 100},
-{"Kadhai Paneer", 200},
-{"Idli (Pair)", 30},
-{"Curd Rice", 100},
-{"Dosa (Plain)", 60},
-{"Dosa (Masala)", 100},
-{"Dosa (Neer)", 80},
-{"Vada (Pair)", 50},
-{"South Indian Pulao", 90},
-{"Kashmiri Pulao", 140},
-{"Methi Pulao", 120},
-{"Plain Rice", 60},
-{"Ghee Rice", 100},
-{"Kabuli Pulao", 150},
-{"Simple Naan", 40},
-{"Butter Naan", 50},
-// Add more veg items here
-};
-struct FoodItem non_veg_menu[] = {
-{"Mutton Curry", 500},
-{"Butter Chicken", 350},
-{"Spicy Chicken Masala", 250},
-{"Amritsari Chicken Masala", 300},
-{"Chicken Korma", 300},
-{"Chicken Kolhapuri", 300},
-{"Kori Gassi", 250},
-{"Chicken Sukka", 250},
-{"Hyderabad Biryani", 200},
-{"Kolkata Chicken Biryani", 200},
-{"Lucknowi Biryani", 220},
-{"Malabar Biryani", 220},
-{"Donne Biryani", 180},
-// Add more non-veg items here
-};
-struct Reservation reservations[MAX_RESERVATIONS];
-int reservationCount = 0;
-struct CustomerFeedback feedbackArray[MAX_FEEDBACK];
-int feedbackCount = 0;
-int veg_total = 0;
-int non_veg_total = 0;
-printf("Welcome to our restaurant!\n");
-printf("Please select the type of food:\n");
-printf("1. Veg\n");
-printf("2. Non Veg\n");
-int choice;
-scanf("%d", &choice);
-if (choice == 1) {
-displayMenu(veg_menu, sizeof(veg_menu) / sizeof(struct FoodItem));
-veg_total = placeOrder(veg_menu, sizeof(veg_menu) / sizeof(struct FoodItem));
-} else if (choice == 2) {
-displayMenu(non_veg_menu, sizeof(non_veg_menu) / sizeof(struct FoodItem));
-non_veg_total = placeOrder(non_veg_menu, sizeof(non_veg_menu) / sizeof(struct
-FoodItem));
-} else {
-printf("Invalid choice!\n");
-return 1; // Exit with an error code
+    loadFoodFromFile();
+
+    int choice;
+    while (1) {
+        printf("Welcome to Food Ordering System\n");
+        printf("1. Admin Login\n");
+        printf("2. User Login\n");
+        printf("3. Exit\n");
+        printf("Enter your choice: ");
+
+        if (scanf("%d", &choice) != 1) { 
+            flushInput(); 
+            continue;
+        }
+
+        switch (choice) {
+            case 1:
+                adminLogin();
+                break;
+            case 2:
+                userLogin();
+                break;
+            case 3:
+                printf("Thank you for using Food Ordering System.\n");
+                exit(0);
+            default:
+                printf("Invalid choice. Please try again.\n");
+        }
+    }
+
+    return 0;
 }
-// Display the order and total amount
-printf("\n----------------------------------\n");
-printf(" ORDER SUMMARY\n");
-printf("----------------------------------\n");
-if (veg_total > 0) {
-printf("Veg Items Total: Rs. %d\n", veg_total);
+
+
+   int totalItemsOrdered(int quantity[], int numItems) {
+    int total = 0;
+    for (int i = 0; i < numItems; i++) {
+        total += quantity[i];
+    }
+    return total;
 }
-if (non_veg_total > 0) {
-printf("Non Veg Items Total: Rs. %d\n", non_veg_total);
+void adminLogin() {
+    char username[20], password[20];
+
+    printf("Admin Login\n");
+    printf("Enter username: ");
+    scanf("%s", username);
+    printf("Enter password: ");
+    scanf("%s", password);
+
+    // For simplicity, we're using "admin" as the username and password
+    if (strcmp(username, "admin") == 0 && strcmp(password, "admin") == 0) {
+        isAdminLoggedIn = 1;
+        printf("Admin login successful.\n");
+
+        int adminChoice;
+        while (1) {
+            printf("Admin Functions:\n");
+            printf("1. Add Food Details\n");
+            printf("2. Modify Food Details\n");
+            printf("3. Delete Food Details\n");
+            printf("4. View All Food Items\n");
+            printf("5. Logout\n");
+            printf("Enter your choice: ");
+            scanf("%d", &adminChoice);
+
+            switch (adminChoice) {
+                case 1:
+                    addFood();
+                    break;
+                case 2:
+                    modifyFood();
+                    break;
+                case 3:
+                    deleteFood();
+                    break;
+                case 4:
+                    viewAllFood();
+                    break;
+                case 5:
+                    printf("Admin logout successful.\n");
+                    saveFoodToFile(); // Save food details to a file before logout
+                    return;
+                default:
+                    printf("Invalid choice. Please try again.\n");
+            }
+        }
+    } else {
+        printf("Invalid username or password. Please try again.\n");
+    }
 }
-int totalAmount = veg_total + non_veg_total;
-printf("Total Amount: Rs. %d\n", totalAmount);
-// Table reservation and feedback options
-int option;
-while (1) {
-printf("\nOptions:\n");
-printf("1. Reserve a Table\n");
-printf("2. Provide Feedback\n");
-printf("3. Exit\n");
-printf("Enter your choice:\n"); // Fixed the missing quotation mark
-scanf("%d", &option);
-switch (option) {
-case 1:
-reserveTable(reservations, &reservationCount);
-break;
-case 2:
-provideFeedback(feedbackArray, &feedbackCount);
-break;
-case 3:
-// Exit the program
-printf("Thank you for using our restaurant management system!\n");
-return 0;
-default:
-printf("Invalid option. Please try again.\n");
+
+void addFood() {
+    if (isAdminLoggedIn) {
+        char foodName[50];
+        double foodPrice;
+
+        printf("Admin: Adding Food Details\n");
+        printf("Enter Food Name: ");
+        scanf("%s", foodName);
+        printf("Enter Food Price: ");
+        scanf("%lf", &foodPrice);
+
+        // Add food details to arrays
+        strcpy(foodItems[foodCount], foodName);
+        foodPrices[foodCount] = foodPrice;
+        foodCount++;
+
+        printf("Food details added successfully.\n");
+    } else {
+        printf("You are not authorized to perform this action.\n");
+    }
 }
+
+void modifyFood() {
+    if (isAdminLoggedIn) {
+        char foodName[50];
+        double newFoodPrice;
+        int found = 0;
+
+        printf("Admin: Modifying Food Details\n");
+        printf("Enter Food Name to Modify: ");
+        scanf("%s", foodName);
+
+        // Search for the food name and get its current price
+        for (int i = 0; i < foodCount; i++) {
+            if (strcmp(foodItems[i], foodName) == 0) {
+                printf("Enter New Price: ");
+                scanf("%lf", &newFoodPrice);
+
+                // Update the food price
+                foodPrices[i] = newFoodPrice;
+                found = 1;
+
+                printf("Food details modified successfully.\n");
+                break;
+            }
+        }
+
+        if (!found) {
+            printf("Food not found.\n");
+        }
+    } else {
+        printf("You are not authorized to perform this action.\n");
+    }
 }
-return 0; // Exit with a success code
+
+void deleteFood() {
+    if (isAdminLoggedIn) {
+        char foodName[50];
+        int found = 0;
+
+        printf("Admin: Deleting Food Details\n");
+        printf("Enter Food Name to Delete: ");
+        scanf("%s", foodName);
+
+        // Search for the food name and remove it from the arrays
+        for (int i = 0; i < foodCount; i++) {
+            if (strcmp(foodItems[i], foodName) == 0) {
+                for (int j = i; j < foodCount - 1; j++) {
+                    strcpy(foodItems[j], foodItems[j + 1]);
+                    foodPrices[j] = foodPrices[j + 1];
+                }
+                foodCount--;
+                found = 1;
+
+                printf("Food details deleted successfully.\n");
+                break;
+            }
+        }
+
+        if (!found) {
+            printf("Food not found.\n");
+        }
+    } else {
+        printf("You are not authorized to perform this action.\n");
+    }
 }
+
+void viewAllFood() {
+    if (isAdminLoggedIn) {
+        printf("Admin: Viewing All Food Items\n");
+
+        printf("All Available Food Items:\n");
+        for (int i = 0; i < foodCount; i++) {
+            printf("%s - $%.2lf\n", foodItems[i], foodPrices[i]);
+        }
+    } else {
+        printf("You are not authorized to perform this action.\n");
+    }
+}
+
+void userLogin() {
+    char username[20], password[20];
+
+    printf("User Login\n");
+    printf("Enter username: ");
+    scanf("%s", username);
+    printf("Enter password: ");
+    scanf("%s", password);
+
+    // For simplicity, we're using "user" as the username and password
+    if (strcmp(username, "user") == 0 && strcmp(password, "user") == 0) {
+        printf("User login successful.\n");
+
+        int userChoice;
+        while (1) {
+            printf("User Functions:\n");
+            printf("1. Place an Order\n");
+            printf("2. View Total Items Ordered\n"); // Added option to view total items ordered
+            printf("3. Logout\n");
+            printf("Enter your choice: ");
+            scanf("%d", &userChoice);
+
+            switch (userChoice) {
+                case 1:
+                    placeOrder();
+                    break;
+                case 2:
+                    printf("Total Items Ordered: %d\n", totalItemsOrdered(quantity, numItems));
+                    break;
+                case 3:
+                    printf("User logout successful.\n");
+                    return;
+                default:
+                    printf("Invalid choice. Please try again.\n");
+            }
+        }
+    } else {
+        printf("Invalid username or password. Please try again.\n");
+    }
+}
+
+void placeOrder() {
+    char selectedFood[10][50];
+    double totalCost = 0.0;
+    int billId = rand() % 1000 + 1;
+
+    printf("User: Placing an Order\n");
+
+    while (1) {
+        printf("Available Food Items:\n");
+
+        int itemNumber = 1;
+        for (int i = 0; i < foodCount; i++) {
+            printf("%d. %s - $%.2lf\n", itemNumber, foodItems[i], foodPrices[i]);
+            itemNumber++;
+        }
+
+        printf("Enter the item number (0 to finish ordering): ");
+        if (scanf("%d", &itemNumber) != 1) {
+            flushInput();
+            continue;
+        }
+
+        if (itemNumber == 0) {
+            break; 
+        }
+
+        if (itemNumber < 1 || itemNumber > foodCount) {
+            printf("Invalid item number. Please try again.\n");
+            continue;
+        }
+
+        printf("Enter the quantity: ");
+        if (scanf("%d", &quantity[numItems]) != 1) {
+            flushInput();
+            continue;
+        }
+
+        strcpy(selectedFood[numItems], foodItems[itemNumber - 1]);
+        totalCost += foodPrices[itemNumber - 1] * quantity[numItems];
+        numItems++;
+    }
+
+    generateBill(billId, "user", selectedFood, quantity, numItems, foodPrices, &totalCost);
+}
+
+   
+
+// ... [Previous code remains unchanged up to the end of the 'placeOrder' function]
+
+void generateBill(int billId, char* username, char selectedFood[][50], int quantity[], int numItems, double foodPrices[], double* totalCost) {
+    printf("Generating Bill...\n");
+
+    // Create a file for the bill
+    char filename[50];
+    sprintf(filename, "bill_%d.txt", billId);
+    FILE* billFile = fopen(filename, "w");
+
+    if (billFile != NULL) {
+        fprintf(billFile, "Bill ID: %d\n", billId);
+        fprintf(billFile, "User: %s\n", username);
+        fprintf(billFile, "------------------------------------\n");
+        fprintf(billFile, "Item\tQuantity\tPrice\tTotal Price\n");
+        fprintf(billFile, "------------------------------------\n");
+
+        // Write selected items, quantities, prices, and total prices to the bill
+        for (int i = 0; i < numItems; i++) {
+            double itemTotal = quantity[i] * foodPrices[i];
+            fprintf(billFile, "%s\t%d\t\t$%.2lf\t$%.2lf\n", selectedFood[i], quantity[i], foodPrices[i], itemTotal);
+        }
+
+        fprintf(billFile, "------------------------------------\n");
+        
+        // Calculate and display the total cost
+        fprintf(billFile, "Total Cost:\t\t$%.2lf\n", *totalCost);
+        fclose(billFile);
+
+        printf("Bill generated successfully. Bill ID: %d\n", billId);
+        printf("\n------ Bill Details ------\n");
+        printf("Bill ID: %d\n", billId);
+        printf("User: %s\n", username);
+        printf("------------------------------------\n");
+        printf("Item\tQuantity\tPrice\tTotal Price\n");
+        printf("------------------------------------\n");
+        for (int i = 0; i < numItems; i++) {
+            double itemTotal = quantity[i] * foodPrices[i];
+            printf("%s\t%d\t\t$%.2lf\t$%.2lf\n", selectedFood[i], quantity[i], foodPrices[i], itemTotal);
+        }
+        printf("------------------------------------\n");
+        printf("Total Cost:\t\t$%.2lf\n", *totalCost);
+        printf("----------------------------\n");
+    } else {
+        printf("Error creating bill.\n");
+    }
+}
+
